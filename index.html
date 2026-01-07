@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Treasure Dig — Quiz Edition (Single File)</title>
+<style>
+  :root{
+    --bg1:#050816;
+    --bg2:#0b1a3a;
+    --line: rgba(255,255,255,.12);
+    --text:#eaf0ff;
+    --muted:#a9b6d6;
+    --blue:#4aa3ff;
+    --green:#3ddc97;
+    --amber:#ffcc66;
+    --red:#ff5c6c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 760px at 16% 12%, rgba(74,163,255,.18), transparent 55%),
+      radial-gradient(900px 620px at 80% 18%, rgba(61,220,151,.12), transparent 60%),
+      radial-gradient(900px 600px at 72% 88%, rgba(255,92,108,.10), transparent 60%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+    overflow:hidden;
+  }
+  .wrap{
+    height:100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding:14px;
+    display:grid;
+    grid-template-columns: 1.25fr .75fr;
+    gap:14px;
+  }
+  @media (max-width: 980px){
+    body{overflow:auto}
+    .wrap{grid-template-columns:1fr; grid-template-rows: 1.05fr .95fr}
+  }
+  .card{
+    border:1px solid var(--line);
+    border-radius:18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+    box-shadow: 0 18px 52px rgba(0,0,0,.48);
+    overflow:hidden;
+    position:relative;
+  }
+  .head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background: rgba(0,0,0,.22);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  }
+  .head .t{font-weight:950;font-size:13px}
+  .head .s{color:var(--muted);font-size:12px}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background: rgba(255,255,255,.05);
+    color:var(--muted);
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .chip b{color:var(--text)}
+  .btn{
+    border-radius:14px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    background: rgba(74,163,255,.14);
+    color:var(--text);
+    font-weight:950;
+    cursor:pointer;
+  }
+  .btn:hover{border-color: rgba(74,163,255,.40)}
+  .btn.ghost{background: rgba(255,255,255,.04)}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .game{position:relative;height:100%;min-height: 560px}
+  canvas{width:100%;height:100%;display:block}
+
+  .sideBody{padding:14px;display:flex;flex-direction:column;gap:12px}
+  .panel{
+    border:1px solid var(--line);
+    border-radius:16px;
+    background: rgba(0,0,0,.22);
+    padding:12px;
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .big{font-weight:950;font-size:13px}
+  .small{color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:6px}
+  .bar{
+    margin-top:10px;height:10px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.08);
+    overflow:hidden;
+  }
+  .bar i{display:block;height:100%;width:0%;background: rgba(61,220,151,.85);transition: width .35s ease}
+  .q{
+    font-weight:950;
+    font-size:13px;
+    line-height:1.45;
+  }
+  .opts{display:grid;gap:10px;margin-top:12px}
+  .opt{
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.04);
+    padding:10px 12px;
+    cursor:pointer;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    transition: transform .12s ease, border-color .18s ease;
+  }
+  .opt:hover{transform: translateY(-1px); border-color: rgba(255,255,255,.20)}
+  .opt[disabled]{opacity:.55;cursor:not-allowed}
+  .left{display:flex;gap:10px;align-items:flex-start}
+  .badge{
+    width:28px;height:28px;border-radius:10px;
+    border:1px solid rgba(74,163,255,.22);
+    background: rgba(74,163,255,.12);
+    display:grid;place-items:center;
+    flex:0 0 auto;
+    font-weight:950;
+  }
+  .kbd{
+    padding:4px 10px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.28);
+    color:var(--muted);
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .fb{
+    display:none;
+    margin-top:12px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.22);
+    padding:12px;
+  }
+  .fb.show{display:block}
+  .fb.good{border-color: rgba(61,220,151,.25); background: linear-gradient(180deg, rgba(61,220,151,.10), rgba(0,0,0,.22))}
+  .fb.bad{border-color: rgba(255,92,108,.25); background: linear-gradient(180deg, rgba(255,92,108,.10), rgba(0,0,0,.22))}
+  .fb .t{font-weight:950}
+  .fb .p{margin-top:6px;color:var(--muted);font-size:12.5px;line-height:1.45}
+  .rowBtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+
+  .hint{
+    border:1px solid var(--line);
+    border-radius:16px;
+    background: rgba(255,255,255,.04);
+    padding:12px;
+    color:var(--muted);
+    font-size:12.5px;
+    line-height:1.45;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- GAME -->
+  <div class="card">
+    <div class="head">
+      <div>
+        <div class="t">Treasure Dig (Quiz Game)</div>
+        <div class="s">Click a rock tile → answer the MCQ → dig to reveal gems and chests.</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div class="chip">Treasure: <b id="treasureText">0/5</b></div>
+        <div class="chip">Energy: <b id="energyText">12</b></div>
+        <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="game">
+      <canvas id="cv"></canvas>
+    </div>
+  </div>
+
+  <!-- MCQ PANEL -->
+  <div class="card">
+    <div class="head">
+      <div>
+        <div class="t">Question Panel</div>
+        <div class="s">Options shuffle every time.</div>
+      </div>
+      <div class="chip">Score <b id="scoreText">0</b></div>
+    </div>
+
+    <div class="sideBody">
+      <div class="panel">
+        <div class="row">
+          <div class="big">How to play</div>
+          <div class="chip">Goal: <b>5 chests</b></div>
+        </div>
+        <div class="small">
+          1) Click any rock tile to dig. <br/>
+          2) Answer the MCQ. Correct breaks the tile. <br/>
+          3) Find chests (🎁) and gems (💎) before energy ends.
+        </div>
+        <div class="bar" aria-hidden="true"><i id="progBar"></i></div>
+      </div>
+
+      <div class="panel">
+        <div class="q" id="qText">Click a rock tile to start digging…</div>
+        <div class="opts" id="opts"></div>
+
+        <div class="fb" id="fb">
+          <div class="t" id="fbT">—</div>
+          <div class="p" id="fbP">—</div>
+          <div class="rowBtns">
+            <button class="btn" id="continueBtn" type="button">Continue</button>
+            <button class="btn ghost" id="retryBtn" type="button">Try again</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint">
+        To replace questions: edit the <b>QUESTION_BANK</b> array in the code (near the top).
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   Treasure Dig — Quiz Edition (Simple but graphic-rich)
+   - Click a tile to "dig"
+   - One MCQ gates the dig action
+   - Correct: tile breaks + particles + reveal item (rock/empty/gem/chest)
+   - Wrong: shake + red flash; retry
+   - Goal: collect 5 chests before energy reaches 0
+   - Options shuffle every time; correct is not always A
+========================================================= */
+
+/* ---------- Replace with your chapter questions ---------- */
+const QUESTION_BANK = [
+  {
+    q: "Which account type is safer for everyday work on a PC?",
+    options: [
+      "Standard user account",
+      "Administrator account",
+      "Guest account only",
+      "No password account"
+    ],
+    correct: 0,
+    ok: "Least privilege is safer for routine tasks.",
+    bad: "Administrator-by-default increases risk."
+  },
+  {
+    q: "Why are automatic updates important?",
+    options: [
+      "They patch known vulnerabilities",
+      "They make the keyboard faster",
+      "They stop all phishing attacks",
+      "They remove the need for backups"
+    ],
+    correct: 0,
+    ok: "Updates close security holes attackers exploit.",
+    bad: "Updates help security, not typing speed."
+  },
+  {
+    q: "What does a firewall primarily do?",
+    options: [
+      "Controls incoming/outgoing network traffic",
+      "Cleans dust from the CPU",
+      "Encrypts the monitor display",
+      "Increases RAM automatically"
+    ],
+    correct: 0,
+    ok: "Firewall filters network connections by rules.",
+    bad: "A firewall does not change hardware."
+  },
+  {
+    q: "Auto-lock on an office PC helps prevent…",
+    options: [
+      "Walk-up access when the user steps away",
+      "Low battery issues",
+      "Slow Wi-Fi",
+      "Printer paper jams"
+    ],
+    correct: 0,
+    ok: "Auto-lock protects shared environments.",
+    bad: "Auto-lock is a security control."
+  },
+  {
+    q: "Best practice for camera/mic permissions?",
+    options: [
+      "Allow only when needed",
+      "Allow all apps always",
+      "Permissions do not matter",
+      "Disable security prompts permanently"
+    ],
+    correct: 0,
+    ok: "Grant only what is necessary.",
+    bad: "Over-permissioning increases exposure."
+  },
+  {
+    q: "A strong password is typically…",
+    options: [
+      "Long and hard to guess",
+      "Your name and birth year",
+      "Only 4 digits",
+      "The same password everywhere"
+    ],
+    correct: 0,
+    ok: "Length + unpredictability improves security.",
+    bad: "Reused or short passwords are risky."
+  },
+];
+
+/* ---------- Utility ---------- */
+function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function rand(a,b){ return a + Math.random()*(b-a); }
+function randi(a,b){ return Math.floor(rand(a,b+1)); }
+
+/* ---------- DOM ---------- */
+const el = {
+  cv: document.getElementById("cv"),
+  treasureText: document.getElementById("treasureText"),
+  energyText: document.getElementById("energyText"),
+  scoreText: document.getElementById("scoreText"),
+  progBar: document.getElementById("progBar"),
+  resetBtn: document.getElementById("resetBtn"),
+
+  qText: document.getElementById("qText"),
+  opts: document.getElementById("opts"),
+  fb: document.getElementById("fb"),
+  fbT: document.getElementById("fbT"),
+  fbP: document.getElementById("fbP"),
+  continueBtn: document.getElementById("continueBtn"),
+  retryBtn: document.getElementById("retryBtn"),
+};
+
+/* ---------- Game config ---------- */
+const GOAL_TREASURE = 5;
+const START_ENERGY = 12;
+const GRID_COLS = 8;
+const GRID_ROWS = 6;
+
+/*
+  Tile contents:
+  - hidden state always starts as "rock"
+  - when broken: reveals content: empty | gem | chest
+  We keep it simple: random distribution + guarantee minimum chests
+*/
+const CONTENT = { EMPTY:"empty", GEM:"gem", CHEST:"chest" };
+
+/* ---------- State ---------- */
+const state = {
+  energy: START_ENERGY,
+  score: 0,
+  treasures: 0,
+  gameOver: false,
+
+  grid: [], // tiles
+  selected: null, // {i,j}
+  locked: false, // locking MCQ buttons
+  currentQ: null, // prepared shuffled MCQ
+  flash: 0,
+  shake: 0,
+
+  particles: [],
+  dust: [],
+  floaties: [],
+
+  // camera slight bob
+  t: 0
+};
+
+/* ---------- Canvas setup ---------- */
+const ctx = el.cv.getContext("2d", {alpha:false});
+let W=0,H=0,dpr=1;
+let board = {x:0,y:0,w:0,h:0,cell:0,pad:0};
+
+function resize(){
+  const r = el.cv.getBoundingClientRect();
+  dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  W = Math.floor(r.width*dpr);
+  H = Math.floor(r.height*dpr);
+  el.cv.width = W;
+  el.cv.height = H;
+
+  const pad = 24*dpr;
+  const top = 18*dpr;
+  const bw = W - pad*2;
+  const bh = H - pad*2 - 62*dpr; // space for bottom HUD
+  const cell = Math.floor(Math.min(bw/GRID_COLS, bh/GRID_ROWS));
+  const gw = cell*GRID_COLS;
+  const gh = cell*GRID_ROWS;
+
+  board = {
+    cell,
+    pad: Math.floor(cell*0.12),
+    x: Math.floor((W-gw)/2),
+    y: Math.floor(top + (bh-gh)/2),
+    w: gw,
+    h: gh
+  };
+}
+window.addEventListener("resize", resize);
+
+/* ---------- Build grid ---------- */
+function buildGrid(){
+  // Create content pool with guaranteed chests
+  const total = GRID_COLS*GRID_ROWS;
+  const guaranteed = GOAL_TREASURE + 1; // a little extra chance
+  const contents = Array(total).fill(CONTENT.EMPTY);
+
+  // place chests
+  let placed = 0;
+  while(placed < guaranteed){
+    const k = randi(0, total-1);
+    if(contents[k] === CONTENT.EMPTY){
+      contents[k] = CONTENT.CHEST;
+      placed++;
+    }
+  }
+  // place gems
+  const gemCount = Math.floor(total*0.22);
+  let gplaced = 0;
+  while(gplaced < gemCount){
+    const k = randi(0, total-1);
+    if(contents[k] === CONTENT.EMPTY){
+      contents[k] = CONTENT.GEM;
+      gplaced++;
+    }
+  }
+
+  // Build tiles (all start as rock/hidden)
+  state.grid = [];
+  let idx = 0;
+  for(let r=0;r<GRID_ROWS;r++){
+    const row = [];
+    for(let c=0;c<GRID_COLS;c++){
+      row.push({
+        revealed: false,
+        breaking: 0,     // 0..1 anim
+        content: contents[idx],
+        sparkle: Math.random(),
+        cracked: 0
+      });
+      idx++;
+    }
+    state.grid.push(row);
+  }
+}
+
+/* ---------- MCQ handling ---------- */
+function pickQuestion(){
+  const base = QUESTION_BANK[randi(0, QUESTION_BANK.length-1)];
+  const opts = base.options.map((t,i)=> ({t, orig:i}));
+  const sh = shuffle(opts);
+  const newCorrect = sh.findIndex(o => o.orig === base.correct);
+
+  return {
+    q: base.q,
+    options: sh.map(o=>o.t),
+    correct: newCorrect,
+    ok: base.ok,
+    bad: base.bad
+  };
+}
+
+function lockOptions(v){
+  [...el.opts.querySelectorAll("button")].forEach(x=> x.disabled = v);
+}
+
+function showQuestion(){
+  state.currentQ = pickQuestion();
+  el.qText.textContent = state.currentQ.q;
+  el.opts.innerHTML = "";
+  el.fb.className = "fb";
+  state.locked = false;
+
+  const badges = ["A","B","C","D"];
+  state.currentQ.options.forEach((t,i)=>{
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt";
+    b.innerHTML = `
+      <div class="left">
+        <div class="badge">${badges[i]}</div>
+        <div style="font-weight:850;line-height:1.35">${t}</div>
+      </div>
+      <div class="kbd">${i+1}</div>
+    `;
+    b.addEventListener("click", ()=> answer(i));
+    el.opts.appendChild(b);
+  });
+
+  // keyboard 1-4
+}
+
+function answer(i){
+  if(state.locked || !state.selected || state.gameOver) return;
+  state.locked = true;
+  lockOptions(true);
+
+  const ok = (i === state.currentQ.correct);
+  if(ok){
+    el.fb.className = "fb show good";
+    el.fbT.textContent = "Correct — Dig successful";
+    el.fbP.textContent = state.currentQ.ok;
+
+    // consume energy + break tile
+    state.energy = Math.max(0, state.energy - 1);
+    state.score += 10;
+
+    const {r,c} = state.selected;
+    breakTile(r,c, true);
+
+  }else{
+    el.fb.className = "fb show bad";
+    el.fbT.textContent = "Not correct";
+    el.fbP.textContent = state.currentQ.bad;
+
+    // wrong answer still costs a little energy to keep it game-like but not harsh
+    state.energy = Math.max(0, state.energy - 1);
+    state.score = Math.max(0, state.score - 2);
+
+    // screen shake + red flash
+    state.flash = 1.0;
+    state.shake = 1.0;
+
+    // dust burst only (no break)
+    const {r,c} = state.selected;
+    const p = cellCenter(r,c);
+    dustBurst(p.x,p.y, false);
+  }
+
+  updateHUD();
+
+  // End checks
+  if(state.treasures >= GOAL_TREASURE){
+    endGame(true);
+  }else if(state.energy <= 0){
+    endGame(false);
+  }
+}
+
+function endGame(win){
+  state.gameOver = true;
+  el.opts.innerHTML = "";
+  el.fb.className = "fb show " + (win ? "good" : "bad");
+  el.fbT.textContent = win ? "🎉 You found enough treasure!" : "Energy finished";
+  el.fbP.textContent = win
+    ? "Great. You completed the dig mission."
+    : "Reset to try again and aim for 5 chests.";
+  el.continueBtn.textContent = "Reset";
+  el.retryBtn.style.display = "none";
+  el.qText.textContent = win ? "Mission complete." : "Mission ended.";
+}
+
+el.continueBtn.addEventListener("click", ()=>{
+  if(state.gameOver){
+    reset();
+    return;
+  }
+  // after feedback, allow new tile selection
+  el.fb.className = "fb";
+  el.qText.textContent = "Click another rock tile to dig…";
+  el.opts.innerHTML = "";
+  state.selected = null;
+  state.locked = false;
+});
+el.retryBtn.addEventListener("click", ()=>{
+  if(state.gameOver) return;
+  // re-ask a new shuffled question for the same selected tile
+  showQuestion();
+});
+el.resetBtn.addEventListener("click", reset);
+
+document.addEventListener("keydown", (e)=>{
+  const n = parseInt(e.key,10);
+  if(n>=1 && n<=4){
+    const btn = el.opts.querySelectorAll("button")[n-1];
+    if(btn && !btn.disabled) btn.click();
+  }
+});
+
+/* ---------- Tile actions ---------- */
+function cellRect(r,c){
+  const x = board.x + c*board.cell;
+  const y = board.y + r*board.cell;
+  return {x,y,w:board.cell,h:board.cell};
+}
+function cellCenter(r,c){
+  const rr = cellRect(r,c);
+  return {x: rr.x + rr.w/2, y: rr.y + rr.h/2};
+}
+
+function breakTile(r,c, withReward){
+  const tile = state.grid[r][c];
+  if(tile.revealed) return;
+
+  tile.breaking = Math.max(tile.breaking, 0.01);
+  tile.cracked = 1;
+
+  const p = cellCenter(r,c);
+  dustBurst(p.x,p.y, true);
+
+  // reveal after short delay (animation handled in loop)
+  // reward will be applied when animation passes threshold
+}
+
+function applyReveal(r,c){
+  const tile = state.grid[r][c];
+  if(tile.revealed) return;
+  tile.revealed = true;
+
+  const p = cellCenter(r,c);
+
+  if(tile.content === CONTENT.GEM){
+    state.score += 15;
+    floaty(p.x,p.y, "💎 +15", "good");
+    sparkleBurst(p.x,p.y);
+  }else if(tile.content === CONTENT.CHEST){
+    state.treasures += 1;
+    state.score += 35;
+    floaty(p.x,p.y, "🎁 CHEST!", "good");
+    bigSparkle(p.x,p.y);
+  }else{
+    // empty
+    state.score += 2;
+    floaty(p.x,p.y, "+2", "muted");
+  }
+
+  updateHUD();
+}
+
+/* ---------- Particles ---------- */
+function dustBurst(x,y, good){
+  const n = good ? 22 : 16;
+  for(let i=0;i<n;i++){
+    state.dust.push({
+      x,y,
+      vx: rand(-1.8,1.8),
+      vy: rand(-2.6,-0.6),
+      life: good ? rand(18,34) : rand(14,26),
+      s: rand(1.2,2.4),
+      good
+    });
+  }
+}
+function sparkleBurst(x,y){
+  for(let i=0;i<18;i++){
+    state.particles.push({
+      x,y,
+      vx: rand(-2.4,2.4),
+      vy: rand(-3.2,-0.9),
+      life: rand(22,40),
+      s: rand(1.0,2.1),
+      kind: "spark"
+    });
+  }
+}
+function bigSparkle(x,y){
+  for(let i=0;i<34;i++){
+    state.particles.push({
+      x,y,
+      vx: rand(-2.8,2.8),
+      vy: rand(-3.6,-1.1),
+      life: rand(28,52),
+      s: rand(1.2,2.4),
+      kind: "spark"
+    });
+  }
+}
+function floaty(x,y,text,kind){
+  state.floaties.push({
+    x,y,
+    vy: rand(-0.6,-1.0),
+    life: 70,
+    text,
+    kind
+  });
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  el.treasureText.textContent = `${state.treasures}/${GOAL_TREASURE}`;
+  el.energyText.textContent = `${state.energy}`;
+  el.scoreText.textContent = `${state.score}`;
+  el.progBar.style.width = `${(state.treasures/GOAL_TREASURE)*100}%`;
+}
+
+/* ---------- Mouse click handling ---------- */
+function canvasToWorld(evt){
+  const rect = el.cv.getBoundingClientRect();
+  const x = (evt.clientX - rect.left) * dpr;
+  const y = (evt.clientY - rect.top) * dpr;
+  return {x,y};
+}
+
+el.cv.addEventListener("click", (evt)=>{
+  if(state.gameOver) return;
+  if(state.locked) return; // answering currently
+  // cannot dig while feedback visible (forces Continue/Retry)
+  if(el.fb.classList.contains("show")) return;
+
+  const p = canvasToWorld(evt);
+  // check in grid
+  if(p.x < board.x || p.x > board.x+board.w || p.y < board.y || p.y > board.y+board.h) return;
+  const c = Math.floor((p.x - board.x) / board.cell);
+  const r = Math.floor((p.y - board.y) / board.cell);
+  if(r<0||r>=GRID_ROWS||c<0||c>=GRID_COLS) return;
+
+  const tile = state.grid[r][c];
+  if(tile.revealed) return;
+
+  state.selected = {r,c};
+  showQuestion();
+});
+
+/* ---------- Drawing ---------- */
+function rr(x,y,w,h,r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function glow(x,y,rad,c0){
+  const g = ctx.createRadialGradient(x,y,0,x,y,rad);
+  g.addColorStop(0,c0);
+  g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.fill();
+}
+
+function drawBackground(t){
+  ctx.fillStyle = "#06102a";
+  ctx.fillRect(0,0,W,H);
+
+  const g1 = ctx.createRadialGradient(W*0.22,H*0.18,0,W*0.22,H*0.18,W*0.62);
+  g1.addColorStop(0,"rgba(74,163,255,.18)");
+  g1.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g1; ctx.fillRect(0,0,W,H);
+
+  const g2 = ctx.createRadialGradient(W*0.82,H*0.80,0,W*0.82,H*0.80,W*0.70);
+  g2.addColorStop(0,"rgba(61,220,151,.12)");
+  g2.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g2; ctx.fillRect(0,0,W,H);
+
+  // stars
+  ctx.save();
+  ctx.globalAlpha = 0.14;
+  for(let i=0;i<38;i++){
+    const x = (i*97 % W);
+    const y = (i*173 % H);
+    ctx.fillStyle = "rgba(255,255,255,.7)";
+    ctx.fillRect(x, y, 2*dpr, 2*dpr);
+  }
+  ctx.restore();
+
+  // cave ceiling glow
+  glow(W*0.5, board.y-40*dpr, 220*dpr, "rgba(255,204,102,.08)");
+}
+
+function drawBoardFrame(){
+  // outer frame
+  ctx.save();
+  glow(board.x+board.w*0.5, board.y+board.h*0.5, board.w*0.62, "rgba(74,163,255,.10)");
+  rr(board.x-10*dpr, board.y-10*dpr, board.w+20*dpr, board.h+20*dpr, 22*dpr);
+  ctx.fillStyle = "rgba(0,0,0,.22)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.14)";
+  ctx.lineWidth = 2*dpr;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTile(r,c,t){
+  const tile = state.grid[r][c];
+  const R = cellRect(r,c);
+  const pad = board.pad;
+
+  const x = R.x + pad;
+  const y = R.y + pad;
+  const w = R.w - pad*2;
+  const h = R.h - pad*2;
+
+  const isSel = state.selected && state.selected.r===r && state.selected.c===c && !tile.revealed;
+
+  // base cell background
+  ctx.save();
+  rr(x,y,w,h,18*dpr);
+  ctx.fillStyle = "rgba(255,255,255,.04)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.10)";
+  ctx.lineWidth = 2*dpr;
+  ctx.stroke();
+
+  // selected glow
+  if(isSel){
+    glow(x+w/2,y+h/2,52*dpr,"rgba(74,163,255,.18)");
+  }
+
+  if(!tile.revealed){
+    // ROCK with texture
+    const crack = tile.cracked;
+    const br = tile.breaking; // 0..1
+    const lift = Math.sin((t + tile.sparkle)*2.2) * (isSel ? 1.5*dpr : 0.6*dpr);
+
+    // rock gradient
+    const g = ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0,"rgba(255,255,255,.08)");
+    g.addColorStop(1,"rgba(0,0,0,.26)");
+    rr(x+2*dpr,y+2*dpr,w-4*dpr,h-4*dpr,16*dpr);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // cracks
+    if(crack){
+      ctx.strokeStyle = "rgba(255,204,102,.22)";
+      ctx.lineWidth = 2*dpr;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x+w*0.22, y+h*0.65);
+      ctx.lineTo(x+w*0.45, y+h*0.40);
+      ctx.lineTo(x+w*0.70, y+h*0.56);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x+w*0.46, y+h*0.42);
+      ctx.lineTo(x+w*0.36, y+h*0.22);
+      ctx.stroke();
+    }
+
+    // breaking overlay (chips)
+    if(br > 0){
+      const alpha = clamp(br*1.4,0,1)*0.7;
+      ctx.globalAlpha = alpha;
+      rr(x+6*dpr,y+6*dpr,w-12*dpr,h-12*dpr,14*dpr);
+      ctx.fillStyle = "rgba(255,255,255,.10)";
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // tiny sparkle on some rocks
+    if((r+c)%3===0){
+      const sx = x+w*0.72;
+      const sy = y+h*0.30;
+      const a = (Math.sin(t*3 + tile.sparkle*10)+1)/2;
+      ctx.globalAlpha = 0.25 + a*0.25;
+      ctx.fillStyle = "rgba(255,204,102,.85)";
+      ctx.beginPath(); ctx.arc(sx,sy,2.2*dpr,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // hover hint (cursor-like)
+    if(isSel){
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = "rgba(234,240,255,.90)";
+      ctx.font = `${14*dpr}px system-ui, Segoe UI, Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("⛏️", x+w/2, y+h/2 + lift);
+      ctx.globalAlpha = 1;
+    }
+  }else{
+    // REVEALED content
+    rr(x+2*dpr,y+2*dpr,w-4*dpr,h-4*dpr,16*dpr);
+    ctx.fillStyle = "rgba(0,0,0,.26)";
+    ctx.fill();
+
+    // content icon
+    let icon = "·";
+    if(tile.content === CONTENT.GEM) icon = "💎";
+    if(tile.content === CONTENT.CHEST) icon = "🎁";
+
+    // glow based on content
+    if(tile.content === CONTENT.GEM){
+      glow(x+w/2,y+h/2,60*dpr,"rgba(74,163,255,.16)");
+    }else if(tile.content === CONTENT.CHEST){
+      glow(x+w/2,y+h/2,72*dpr,"rgba(255,204,102,.18)");
+    }
+
+    ctx.fillStyle = "rgba(234,240,255,.92)";
+    ctx.font = `${22*dpr}px system-ui, Segoe UI, Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(icon, x+w/2, y+h/2);
+
+    // subtle text for empty
+    if(tile.content === CONTENT.EMPTY){
+      ctx.fillStyle = "rgba(169,182,214,.70)";
+      ctx.font = `${11*dpr}px system-ui, Segoe UI, Arial`;
+      ctx.fillText("empty", x+w/2, y+h*0.80);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawHUD(){
+  // Bottom HUD strip (in-canvas, game-like)
+  const h = 54*dpr;
+  const y = H - h - 14*dpr;
+  ctx.save();
+  rr(14*dpr, y, W-28*dpr, h, 18*dpr);
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.14)";
+  ctx.lineWidth = 2*dpr;
+  ctx.stroke();
+
+  // left: mission
+  ctx.fillStyle = "rgba(234,240,255,.92)";
+  ctx.font = `${12*dpr}px system-ui, Segoe UI, Arial`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("MISSION: Find 5 chests", 28*dpr, y + h/2);
+
+  // center: energy pips
+  const ex = W*0.48;
+  ctx.fillStyle = "rgba(169,182,214,.92)";
+  ctx.fillText("ENERGY", ex - 66*dpr, y + h/2);
+  for(let i=0;i<START_ENERGY;i++){
+    const px = ex + i*10*dpr - (START_ENERGY*10*dpr)/2 + 72*dpr;
+    const py = y + h/2;
+    const on = i < state.energy;
+    ctx.globalAlpha = on ? 1 : 0.22;
+    glow(px,py,16*dpr, on ? "rgba(61,220,151,.16)" : "rgba(255,255,255,.04)");
+    ctx.fillStyle = on ? "rgba(61,220,151,.85)" : "rgba(255,255,255,.25)";
+    ctx.beginPath(); ctx.arc(px,py,3.2*dpr,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // right: treasure
+  ctx.textAlign = "right";
+  ctx.fillStyle = "rgba(234,240,255,.92)";
+  ctx.fillText(`TREASURE ${state.treasures}/${GOAL_TREASURE}`, W-28*dpr, y + h/2);
+
+  ctx.restore();
+}
+
+function drawParticles(){
+  // dust
+  for(const p of state.dust){
+    ctx.save();
+    ctx.globalAlpha = clamp(p.life/34, 0, 1) * 0.85;
+    ctx.fillStyle = p.good ? "rgba(255,255,255,.70)" : "rgba(255,92,108,.60)";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.s*dpr, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+  // sparkles
+  for(const p of state.particles){
+    ctx.save();
+    ctx.globalAlpha = clamp(p.life/52, 0, 1);
+    ctx.fillStyle = "rgba(255,204,102,.85)";
+    rr(p.x-2.2*dpr*p.s, p.y-2.2*dpr*p.s, 4.4*dpr*p.s, 4.4*dpr*p.s, 1.3*dpr);
+    ctx.fill();
+    ctx.restore();
+  }
+  // floaties
+  for(const f of state.floaties){
+    ctx.save();
+    ctx.globalAlpha = clamp(f.life/70, 0, 1);
+    let color = "rgba(169,182,214,.92)";
+    if(f.kind === "good") color = "rgba(61,220,151,.92)";
+    ctx.fillStyle = color;
+    ctx.font = `${13*dpr}px system-ui, Segoe UI, Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.restore();
+  }
+}
+
+/* ---------- Update loop ---------- */
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(0.033, (now-last)/1000);
+  last = now;
+  state.t += dt;
+
+  // animate tile breaking + reveal
+  for(let r=0;r<GRID_ROWS;r++){
+    for(let c=0;c<GRID_COLS;c++){
+      const tile = state.grid[r][c];
+      if(!tile.revealed && tile.breaking > 0){
+        tile.breaking = Math.min(1, tile.breaking + dt*2.2);
+        if(tile.breaking >= 0.92){
+          // reveal once
+          tile.breaking = 0;
+          applyReveal(r,c);
+        }
+      }
+    }
+  }
+
+  // particles physics
+  for(const p of state.dust){
+    p.x += p.vx * 70 * dt;
+    p.y += p.vy * 70 * dt;
+    p.vy += 0.18 * 70 * dt;
+    p.life -= 1;
+  }
+  state.dust = state.dust.filter(p=> p.life > 0);
+
+  for(const p of state.particles){
+    p.x += p.vx * 70 * dt;
+    p.y += p.vy * 70 * dt;
+    p.vy += 0.14 * 70 * dt;
+    p.life -= 1;
+  }
+  state.particles = state.particles.filter(p=> p.life > 0);
+
+  for(const f of state.floaties){
+    f.y += f.vy * 70 * dt;
+    f.life -= 1;
+  }
+  state.floaties = state.floaties.filter(f=> f.life > 0);
+
+  // flash/shake decay
+  state.flash = Math.max(0, state.flash - dt*2.4);
+  state.shake = Math.max(0, state.shake - dt*2.8);
+
+  // render
+  ctx.save();
+  if(state.shake > 0){
+    const mag = 6*dpr*state.shake;
+    ctx.translate((Math.random()*2-1)*mag, (Math.random()*2-1)*mag);
+  }
+
+  drawBackground(state.t);
+  drawBoardFrame();
+
+  // grid
+  for(let r=0;r<GRID_ROWS;r++){
+    for(let c=0;c<GRID_COLS;c++){
+      drawTile(r,c,state.t);
+    }
+  }
+
+  drawParticles();
+  drawHUD();
+
+  // red flash overlay
+  if(state.flash > 0){
+    ctx.save();
+    ctx.globalAlpha = 0.20 * state.flash;
+    ctx.fillStyle = "rgba(255,92,108,.95)";
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+
+  ctx.restore();
+  requestAnimationFrame(tick);
+}
+
+/* ---------- Reset ---------- */
+function reset(){
+  state.energy = START_ENERGY;
+  state.score = 0;
+  state.treasures = 0;
+  state.gameOver = false;
+  state.selected = null;
+  state.locked = false;
+
+  state.flash = 0;
+  state.shake = 0;
+  state.particles.length = 0;
+  state.dust.length = 0;
+  state.floaties.length = 0;
+
+  buildGrid();
+  updateHUD();
+
+  el.qText.textContent = "Click a rock tile to start digging…";
+  el.opts.innerHTML = "";
+  el.fb.className = "fb";
+  el.continueBtn.textContent = "Continue";
+  el.retryBtn.style.display = "inline-block";
+}
+resize();
+reset();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
