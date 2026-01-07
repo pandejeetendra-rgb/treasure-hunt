@@ -107,7 +107,9 @@
   }
   .bar i{display:block;height:100%;width:0%;background: rgba(61,220,151,.85);transition: width .35s ease}
 
-  .q{font-weight:950;font-size:13px;line-height:1.45}
+  /* ===== FIX: ensure question/options text is never black ===== */
+  .q, #qText { color: var(--ink) !important; }
+
   .opts{display:grid;gap:10px;margin-top:12px}
   .opt{
     border-radius:16px;
@@ -117,7 +119,9 @@
     cursor:pointer;
     display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
     transition: transform .12s ease, border-color .18s ease, background .18s ease;
+    color: var(--ink) !important;
   }
+  .opt *{ color: inherit !important; } /* forces child nodes to inherit light color */
   .opt:hover{transform: translateY(-1px); border-color: rgba(255,255,255,.20); background: rgba(255,255,255,.06)}
   .opt[disabled]{opacity:.55;cursor:not-allowed}
   .left{display:flex;gap:10px;align-items:flex-start}
@@ -128,12 +132,13 @@
     display:grid;place-items:center;
     flex:0 0 auto;
     font-weight:950;
+    color: var(--ink) !important;
   }
   .kbd{
     padding:4px 10px;border-radius:999px;
     border:1px solid rgba(255,255,255,.12);
     background: rgba(0,0,0,.28);
-    color:var(--muted);
+    color: var(--muted) !important;
     font-size:11px;
     white-space:nowrap;
   }
@@ -145,6 +150,7 @@
     border:1px solid rgba(255,255,255,.12);
     background: rgba(0,0,0,.22);
     padding:12px;
+    color: var(--ink);
   }
   .fb.show{display:block}
   .fb.good{border-color: rgba(61,220,151,.25); background: linear-gradient(180deg, rgba(61,220,151,.10), rgba(0,0,0,.22))}
@@ -235,20 +241,10 @@
 <script>
 /* =========================================================
    Treasure Dig — Windows Security Quiz (Graphic-rich, simple logic)
-   Visual upgrades:
-   - Multi-layer cave background + parallax
-   - Torch glow + floating dust motes
-   - Miner character + pickaxe swing when mining
-   - Better rock texture + cracks
-   - Loot animations: chest pop, gem sparkle, rare artifact banner
-   - Streak bonus + combo floaties
-   Learning:
-   - MCQs derived from your "Windows Security" and "User Account Security" chapters.
 ========================================================= */
 
 /* ---------- MCQs (from your uploaded chapters) ---------- */
 const QUESTION_BANK = [
-  // Privacy / installation settings
   { q:"During Windows setup, what is recommended instead of accepting Express Settings?",
     options:["Choose Customise settings","Disable the display driver","Skip creating a user","Turn off the PC immediately"],
     correct:0,
@@ -291,7 +287,6 @@ const QUESTION_BANK = [
     ok:"It reduces background activity and unnecessary data/notifications.",
     bad:"It is unrelated to encryption, passwords, or firewall." },
 
-  // Accounts / passwords / screen lock
   { q:"Why should each person have a unique Windows user account?",
     options:["Better security and accountability","To increase screen brightness","To disable antivirus","To avoid updates"],
     correct:0,
@@ -322,7 +317,6 @@ const QUESTION_BANK = [
     ok:"Short timeouts help prevent walk-up access.",
     bad:"Long or never-lock increases risk in offices." },
 
-  // Updates / firewall / malware avoidance
   { q:"Why are system updates important?",
     options:["They patch vulnerabilities exploited by malware","They permanently stop phishing","They remove the need for backups","They increase hardware RAM"],
     correct:0,
@@ -359,7 +353,6 @@ const QUESTION_BANK = [
     ok:"AutoPlay can increase exposure from removable media.",
     bad:"It doesn’t affect audio quality or accounts." },
 
-  // BitLocker / encryption
   { q:"Why is full-disk encryption (BitLocker) useful?",
     options:["Protects files if someone gets physical access to the computer","Makes Wi-Fi faster","Prevents all phishing","Guarantees no malware"],
     correct:0,
@@ -435,7 +428,6 @@ const state = {
   flash: 0,
   shake: 0,
 
-  // Visual
   particles: [],
   dust: [],
   motes: [],
@@ -475,6 +467,7 @@ function resize(){
     w: gw,
     h: gh
   };
+  seedMotes();
 }
 window.addEventListener("resize", resize);
 
@@ -483,7 +476,6 @@ function buildGrid(){
   const total = GRID_COLS*GRID_ROWS;
   const contents = Array(total).fill(CONTENT.EMPTY);
 
-  // ensure chests
   const chestCount = GOAL_TREASURE + 2;
   let placed = 0;
   while(placed < chestCount){
@@ -494,7 +486,6 @@ function buildGrid(){
     }
   }
 
-  // gems
   const gemCount = Math.floor(total*0.22);
   let gplaced = 0;
   while(gplaced < gemCount){
@@ -505,7 +496,6 @@ function buildGrid(){
     }
   }
 
-  // rare artifacts
   const artCount = 2;
   let aplaced = 0;
   while(aplaced < artCount){
@@ -527,7 +517,7 @@ function buildGrid(){
         content: contents[idx],
         sparkle: Math.random(),
         cracked: 0,
-        heat: rand(0,1), // torch warmth highlight
+        heat: rand(0,1),
       });
       idx++;
     }
@@ -578,8 +568,6 @@ function answer(i){
   lockOptions(true);
 
   const ok = (i === state.currentQ.correct);
-
-  // Energy cost always (keeps pressure)
   state.energy = Math.max(0, state.energy - 1);
 
   if(ok){
@@ -602,7 +590,6 @@ function answer(i){
     el.fbT.textContent = "Not correct";
     el.fbP.textContent = state.currentQ.bad;
 
-    // shake + flash + dust
     state.flash = 1.0;
     state.shake = 1.0;
     const {r,c} = state.selected;
@@ -675,7 +662,6 @@ function mineTile(r,c){
 
   const p = cellCenter(r,c);
 
-  // miner moves + swings
   state.miner.tx = p.x - board.cell*0.42;
   state.miner.ty = p.y + board.cell*0.18;
   state.miner.face = (state.miner.tx > state.miner.x) ? 1 : -1;
@@ -756,7 +742,6 @@ function bigSparkle(x,y){
   }
 }
 function chestPop(x,y){
-  // A few "coin" particles + chest bounce illusion
   for(let i=0;i<20;i++){
     state.particles.push({
       x,y,
@@ -779,10 +764,10 @@ function floaty(x,y,text,kind){
   });
 }
 
-/* dust motes floating */
+/* ---------- Motes ---------- */
 function seedMotes(){
   state.motes.length = 0;
-  const count = Math.floor((W*H) / (22000*dpr*dpr));
+  const count = Math.max(24, Math.floor((W*H) / (26000*dpr*dpr)));
   for(let i=0;i<count;i++){
     state.motes.push({
       x: rand(0,W),
@@ -854,24 +839,20 @@ function drawBackground(t){
   ctx.fillStyle = "#040611";
   ctx.fillRect(0,0,W,H);
 
-  // Cave layers (parallax)
   const p1 = Math.sin(t*0.22)*10*dpr;
   const p2 = Math.sin(t*0.18+2.2)*14*dpr;
-  const p3 = Math.sin(t*0.15+4.2)*18*dpr;
 
-  // deep cave gradient
   const g0 = ctx.createLinearGradient(0,0,0,H);
   g0.addColorStop(0,"#050a1b");
   g0.addColorStop(1,"#071f3d");
   ctx.fillStyle = g0;
   ctx.fillRect(0,0,W,H);
 
-  // far glow pockets
   glow(W*0.18, H*0.16, 260*dpr, "rgba(74,163,255,.10)");
   glow(W*0.78, H*0.22, 220*dpr, "rgba(61,220,151,.08)");
   glow(W*0.64, H*0.84, 280*dpr, "rgba(255,204,102,.10)");
 
-  // stalactites silhouette
+  // ceiling silhouette
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,.30)";
   ctx.beginPath();
@@ -897,11 +878,11 @@ function drawBackground(t){
   ctx.fill();
   ctx.restore();
 
-  // torch glow (follows miner position)
+  // torch glow
   glow(state.miner.x + 18*dpr, state.miner.y - 30*dpr, 220*dpr, "rgba(255,204,102,.12)");
   glow(state.miner.x + 18*dpr, state.miner.y - 30*dpr, 120*dpr, "rgba(255,204,102,.10)");
 
-  // floating motes
+  // motes
   ctx.save();
   for(const m of state.motes){
     ctx.globalAlpha = m.a;
@@ -926,28 +907,24 @@ function drawBoardFrame(){
 }
 
 function drawMiner(t){
-  // Smooth move toward target
   state.miner.x += (state.miner.tx - state.miner.x) * 0.08;
   state.miner.y += (state.miner.ty - state.miner.y) * 0.08;
 
   const x = state.miner.x, y = state.miner.y;
   const face = state.miner.face;
 
-  // swing decay
   state.miner.swing = Math.max(0, state.miner.swing - 0.04);
 
   const bob = Math.sin(t*6)*1.2*dpr;
   const swing = state.miner.swing * Math.sin(t*14) * 1.0;
 
   ctx.save();
-  // shadow
   ctx.globalAlpha = 0.55;
   rr(x-18*dpr, y+12*dpr, 44*dpr, 10*dpr, 8*dpr);
   ctx.fillStyle = "rgba(0,0,0,.35)";
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // body
   rr(x-10*dpr, y-16*dpr + bob, 26*dpr, 30*dpr, 10*dpr);
   ctx.fillStyle = "rgba(74,163,255,.18)";
   ctx.fill();
@@ -955,7 +932,6 @@ function drawMiner(t){
   ctx.lineWidth = 2*dpr;
   ctx.stroke();
 
-  // head
   ctx.beginPath();
   ctx.arc(x+3*dpr, y-24*dpr + bob, 10*dpr, 0, Math.PI*2);
   ctx.fillStyle = "rgba(255,255,255,.14)";
@@ -963,22 +939,18 @@ function drawMiner(t){
   ctx.strokeStyle = "rgba(255,255,255,.10)";
   ctx.stroke();
 
-  // helmet lamp glow
   glow(x+6*dpr, y-26*dpr + bob, 90*dpr, "rgba(255,204,102,.12)");
   ctx.beginPath();
   ctx.arc(x+8*dpr, y-26*dpr + bob, 2.4*dpr, 0, Math.PI*2);
   ctx.fillStyle = "rgba(255,204,102,.95)";
   ctx.fill();
 
-  // pickaxe (simple)
   ctx.translate(x+14*dpr, y-10*dpr + bob);
   ctx.scale(face, 1);
   ctx.rotate(-0.4 + swing);
-  // handle
   rr(-2*dpr, -2*dpr, 28*dpr, 5*dpr, 3*dpr);
   ctx.fillStyle = "rgba(255,204,102,.30)";
   ctx.fill();
-  // blade
   rr(22*dpr, -7*dpr, 10*dpr, 14*dpr, 4*dpr);
   ctx.fillStyle = "rgba(255,255,255,.16)";
   ctx.fill();
@@ -998,8 +970,6 @@ function drawTile(r,c,t){
   const isSel = state.selected && state.selected.r===r && state.selected.c===c && !tile.revealed;
 
   ctx.save();
-
-  // base cell
   rr(x,y,w,h,18*dpr);
   ctx.fillStyle = "rgba(255,255,255,.035)";
   ctx.fill();
@@ -1007,7 +977,6 @@ function drawTile(r,c,t){
   ctx.lineWidth = 2*dpr;
   ctx.stroke();
 
-  // heat glow from "torch"
   const cx = x+w/2, cy = y+h/2;
   const dist = Math.hypot((cx - (state.miner.x+10*dpr))/dpr, (cy - (state.miner.y-20*dpr))/dpr);
   const warm = clamp(1 - dist/240, 0, 1) * 0.35;
@@ -1015,7 +984,6 @@ function drawTile(r,c,t){
 
   if(isSel){
     glow(cx,cy, 58*dpr, "rgba(74,163,255,.18)");
-    // subtle pulse ring
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = "rgba(74,163,255,.55)";
     ctx.lineWidth = 2*dpr;
@@ -1026,7 +994,6 @@ function drawTile(r,c,t){
   }
 
   if(!tile.revealed){
-    // rock texture
     const g = ctx.createLinearGradient(x,y,x+w,y+h);
     g.addColorStop(0,"rgba(255,255,255,.10)");
     g.addColorStop(1,"rgba(0,0,0,.30)");
@@ -1034,7 +1001,6 @@ function drawTile(r,c,t){
     ctx.fillStyle = g;
     ctx.fill();
 
-    // speckles
     ctx.save();
     ctx.globalAlpha = 0.14;
     ctx.fillStyle = "rgba(255,255,255,.9)";
@@ -1045,7 +1011,6 @@ function drawTile(r,c,t){
     }
     ctx.restore();
 
-    // cracks if mined
     if(tile.cracked){
       ctx.strokeStyle = "rgba(255,204,102,.22)";
       ctx.lineWidth = 2*dpr;
@@ -1061,7 +1026,6 @@ function drawTile(r,c,t){
       ctx.stroke();
     }
 
-    // breaking overlay
     if(tile.breaking > 0){
       const alpha = clamp(tile.breaking*1.6,0,1)*0.65;
       ctx.globalAlpha = alpha;
@@ -1071,7 +1035,6 @@ function drawTile(r,c,t){
       ctx.globalAlpha = 1;
     }
 
-    // hint pickaxe icon
     if(isSel){
       ctx.globalAlpha = 0.92;
       ctx.fillStyle = "rgba(234,240,255,.95)";
@@ -1082,19 +1045,18 @@ function drawTile(r,c,t){
       ctx.globalAlpha = 1;
     }
   }else{
-    // revealed pit
     rr(x+2*dpr,y+2*dpr,w-4*dpr,h-4*dpr,16*dpr);
     ctx.fillStyle = "rgba(0,0,0,.30)";
     ctx.fill();
 
     let icon = "·";
-    if(tile.content === CONTENT.GEM) icon = "💎";
-    if(tile.content === CONTENT.CHEST) icon = "🎁";
-    if(tile.content === CONTENT.ART) icon = "🏺";
+    if(tile.content === "gem") icon = "💎";
+    if(tile.content === "chest") icon = "🎁";
+    if(tile.content === "artifact") icon = "🏺";
 
-    if(tile.content === CONTENT.GEM) glow(cx,cy, 62*dpr, "rgba(74,163,255,.14)");
-    if(tile.content === CONTENT.CHEST) glow(cx,cy, 74*dpr, "rgba(255,204,102,.18)");
-    if(tile.content === CONTENT.ART) glow(cx,cy, 86*dpr, "rgba(255,204,102,.20)");
+    if(tile.content === "gem") glow(cx,cy, 62*dpr, "rgba(74,163,255,.14)");
+    if(tile.content === "chest") glow(cx,cy, 74*dpr, "rgba(255,204,102,.18)");
+    if(tile.content === "artifact") glow(cx,cy, 86*dpr, "rgba(255,204,102,.20)");
 
     ctx.fillStyle = "rgba(234,240,255,.92)";
     ctx.font = `${22*dpr}px system-ui, Segoe UI, Arial`;
@@ -1102,7 +1064,7 @@ function drawTile(r,c,t){
     ctx.textBaseline = "middle";
     ctx.fillText(icon, cx, cy);
 
-    if(tile.content === CONTENT.EMPTY){
+    if(tile.content === "empty"){
       ctx.fillStyle = "rgba(169,182,214,.70)";
       ctx.font = `${11*dpr}px system-ui, Segoe UI, Arial`;
       ctx.fillText("empty", cx, y+h*0.80);
@@ -1124,14 +1086,12 @@ function drawHUD(){
   ctx.lineWidth = 2*dpr;
   ctx.stroke();
 
-  // left: mission
   ctx.fillStyle = "rgba(234,240,255,.92)";
   ctx.font = `${12*dpr}px system-ui, Segoe UI, Arial`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText("MISSION: Find 5 chests", 28*dpr, y + h/2);
 
-  // center: energy dots
   const ex = W*0.48;
   ctx.fillStyle = "rgba(169,182,214,.92)";
   ctx.fillText("ENERGY", ex - 66*dpr, y + h/2);
@@ -1146,7 +1106,6 @@ function drawHUD(){
   }
   ctx.globalAlpha = 1;
 
-  // right: streak
   ctx.textAlign = "right";
   ctx.fillStyle = "rgba(234,240,255,.92)";
   ctx.fillText(`STREAK ${state.streak}`, W-28*dpr, y + h/2);
@@ -1186,7 +1145,6 @@ function drawBanners(){
 }
 
 function drawParticles(){
-  // dust
   for(const p of state.dust){
     ctx.save();
     ctx.globalAlpha = clamp(p.life/38, 0, 1) * 0.85;
@@ -1196,7 +1154,6 @@ function drawParticles(){
     ctx.fill();
     ctx.restore();
   }
-  // sparkles / coins
   for(const p of state.particles){
     ctx.save();
     ctx.globalAlpha = clamp(p.life/52, 0, 1);
@@ -1211,7 +1168,6 @@ function drawParticles(){
     }
     ctx.restore();
   }
-  // floaties
   for(const f of state.floaties){
     ctx.save();
     ctx.globalAlpha = clamp(f.life/76, 0, 1);
@@ -1228,7 +1184,6 @@ function drawParticles(){
 }
 
 function drawVignette(){
-  // dark edges for cinematic look
   const g = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.15, W/2, H/2, Math.max(W,H)*0.65);
   g.addColorStop(0, "rgba(0,0,0,0)");
   g.addColorStop(1, "rgba(0,0,0,.35)");
@@ -1243,7 +1198,6 @@ function tick(now){
   last = now;
   state.t += dt;
 
-  // Animate mined tiles -> reveal
   for(let r=0;r<GRID_ROWS;r++){
     for(let c=0;c<GRID_COLS;c++){
       const tile = state.grid[r][c];
@@ -1257,7 +1211,6 @@ function tick(now){
     }
   }
 
-  // particles physics
   for(const p of state.dust){
     p.x += p.vx * 70 * dt;
     p.y += p.vy * 70 * dt;
@@ -1283,7 +1236,6 @@ function tick(now){
   for(const b of state.banners) b.life -= 1;
   state.banners = state.banners.filter(b=> b.life > 0);
 
-  // motes drift
   for(const m of state.motes){
     m.x += m.vx * 60 * dt;
     m.y += m.vy * 60 * dt;
@@ -1293,7 +1245,6 @@ function tick(now){
     if(m.y > H + 10*dpr) m.y = -10*dpr;
   }
 
-  // miner target defaults near board bottom-left
   if(state.miner.tx === 0 && state.miner.ty === 0){
     state.miner.x = board.x + board.cell*0.25;
     state.miner.y = board.y + board.h - board.cell*0.15;
@@ -1301,11 +1252,9 @@ function tick(now){
     state.miner.ty = state.miner.y;
   }
 
-  // flash/shake
   state.flash = Math.max(0, state.flash - dt*2.4);
   state.shake = Math.max(0, state.shake - dt*2.8);
 
-  // render
   ctx.save();
   if(state.shake > 0){
     const mag = 6*dpr*state.shake;
@@ -1327,7 +1276,6 @@ function tick(now){
   drawHUD();
   drawVignette();
 
-  // red flash overlay on wrong answer
   if(state.flash > 0){
     ctx.save();
     ctx.globalAlpha = 0.18 * state.flash;
@@ -1360,7 +1308,6 @@ function reset(){
   buildGrid();
   updateHUD();
 
-  // miner initial
   state.miner.tx = 0; state.miner.ty = 0; state.miner.swing = 0;
 
   el.qText.textContent = "Click a rock tile to start…";
@@ -1371,7 +1318,6 @@ function reset(){
 }
 
 resize();
-seedMotes();
 reset();
 requestAnimationFrame(tick);
 </script>
